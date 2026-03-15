@@ -59,3 +59,9 @@ export async function reactivate(session, anonymousId) {
 export async function deleteEmail(session, anonymousId) {
   return await request(session, "/v1/hme/delete", "POST", { anonymousId });
 }
+
+export async function updateForwardTo(session, forwardToEmail) {
+  return await request(session, "/v1/hme/updateForwardTo", "POST", {
+    forwardToEmail,
+  });
+}

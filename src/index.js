@@ -196,6 +196,44 @@ async function deleteEmailAction() {
   success("Email permanently deleted.");
 }
 
+async function updateForwardTo() {
+  separator();
+  const result = await withSpinner("Fetching current settings...", () =>
+    api.list(session),
+  );
+
+  const current = result.selectedForwardTo || "-";
+  const available = result.forwardToEmails || [];
+
+  info(`Current forward-to: ${chalk.white.bold(current)}`);
+  console.log();
+
+  if (available.length === 0) {
+    warn("No forward-to emails found on your account.");
+    return;
+  }
+
+  const choices = available.map((e) => ({
+    name: e === current ? `${e}  ${chalk.green("(current)")}` : e,
+    value: e,
+  }));
+
+  const email = await select({
+    message: "Select forward-to email:",
+    choices,
+  });
+
+  if (email === current) {
+    info("Already set to this email.");
+    return;
+  }
+
+  await withSpinner("Updating forward-to address...", () =>
+    api.updateForwardTo(session, email),
+  );
+  success(`Forward-to updated to: ${chalk.white.bold(email)}`);
+}
+
 async function mainMenu() {
   while (true) {
     separator();
@@ -208,6 +246,7 @@ async function mainMenu() {
         { name: chalk.yellow("  Deactivate email"), value: "deactivate" },
         { name: chalk.green("  Reactivate email"), value: "reactivate" },
         { name: chalk.red("  Delete email"), value: "delete" },
+        { name: chalk.magenta("  Update forward-to"), value: "forward" },
         { name: chalk.dim("  Re-login"), value: "relogin" },
         { name: chalk.dim("  Exit"), value: "exit" },
       ],
@@ -232,6 +271,9 @@ async function mainMenu() {
           break;
         case "delete":
           await deleteEmailAction();
+          break;
+        case "forward":
+          await updateForwardTo();
           break;
         case "relogin":
           session = await login();

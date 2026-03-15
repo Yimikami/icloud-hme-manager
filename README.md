@@ -78,15 +78,16 @@ Session data is stored in your OS data directory:
 
 ### Commands
 
-| Command              | Description                                    |
-| -------------------- | ---------------------------------------------- |
-| **Create new email** | Generate a random alias and reserve it         |
-| **List all emails**  | Display all aliases in a formatted table       |
-| **View detail**      | Inspect a specific alias                       |
-| **Deactivate**       | Pause forwarding for an alias                  |
-| **Reactivate**       | Resume forwarding for a paused alias           |
-| **Delete**           | Permanently remove an alias (auto-deactivates) |
-| **Re-login**         | Force a fresh authentication session           |
+| Command               | Description                                    |
+| --------------------- | ---------------------------------------------- |
+| **Create new email**  | Generate a random alias and reserve it         |
+| **List all emails**   | Display all aliases in a formatted table       |
+| **View detail**       | Inspect a specific alias                       |
+| **Deactivate**        | Pause forwarding for an alias                  |
+| **Reactivate**        | Resume forwarding for a paused alias           |
+| **Delete**            | Permanently remove an alias (auto-deactivates) |
+| **Update forward-to** | Change the email address aliases forward to    |
+| **Re-login**          | Force a fresh authentication session           |
 
 ## How It Works
 
