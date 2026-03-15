@@ -52,16 +52,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+          merge-multiple: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: RELEASE_NOTES.md
           files: |
-            artifacts/icloud-hme-linux/icloud-hme-linux
-            artifacts/icloud-hme-macos/icloud-hme-macos
-            artifacts/icloud-hme-win.exe/icloud-hme-win.exe
+            artifacts/icloud-hme-linux
+            artifacts/icloud-hme-macos
+            artifacts/icloud-hme-win.exe
