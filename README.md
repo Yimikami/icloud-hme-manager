@@ -16,7 +16,11 @@ A fast, secure CLI tool to manage your iCloud+ **Hide My Email** addresses.
 
 ## Features
 
-- **Full CRUD** &mdash; Create, list, view, deactivate, reactivate, and delete aliases
+- **Interactive TUI list** &mdash; Real-time search, arrow key navigation, and inline detail view
+- **Full alias management** &mdash; Create, edit, deactivate, reactivate, and delete aliases
+- **Bulk operations** &mdash; Deactivate or delete multiple aliases at once
+- **Export** &mdash; Save all aliases to CSV or JSON
+- **Clipboard support** &mdash; Copy an alias address with a single keypress
 - **Apple SRP authentication** &mdash; Secure login with 2FA support
 - **Encrypted sessions** &mdash; Session data is AES-256-GCM encrypted on disk
 - **Standalone executable** &mdash; No runtime required, just download and run
@@ -76,19 +80,38 @@ Session data is stored in your OS data directory:
 | macOS   | `~/Library/Application Support/icloud-hme-manager/session.json` |
 | Linux   | `~/.config/icloud-hme-manager/session.json`                     |
 
-### Commands
+### Menu
 
-| Command               | Description                                    |
-| --------------------- | ---------------------------------------------- |
-| **Create new email**  | Generate a random alias and reserve it         |
-| **List all emails**   | Display all aliases in a formatted table       |
-| **View detail**       | Inspect a specific alias                       |
-| **Deactivate**        | Pause forwarding for an alias                  |
-| **Reactivate**        | Resume forwarding for a paused alias           |
-| **Edit email**        | Update the label and note of an alias          |
-| **Delete**            | Permanently remove an alias (auto-deactivates) |
-| **Update forward-to** | Change the email address aliases forward to    |
-| **Re-login**          | Force a fresh authentication session           |
+| Option                | Description                                              |
+| --------------------- | -------------------------------------------------------- |
+| **Create new email**  | Generate a random alias and reserve it                   |
+| **List all emails**   | Interactive TUI — search, navigate, and manage aliases   |
+| **Delete email**      | Permanently remove an alias                              |
+| **Bulk deactivate**   | Deactivate multiple aliases at once                      |
+| **Bulk delete**       | Delete multiple aliases at once                          |
+| **Update forward-to** | Change which address aliases forward to                  |
+| **Export emails**     | Save all aliases to a CSV or JSON file                   |
+| **Re-login**          | Force a fresh authentication session                     |
+
+### List View — Keyboard Shortcuts
+
+| Key       | Action                        |
+| --------- | ----------------------------- |
+| Type      | Filter aliases in real time   |
+| ↑ / ↓     | Navigate rows                 |
+| Enter     | Open detail view              |
+| Esc       | Back to main menu             |
+
+### Detail View — Keyboard Shortcuts
+
+| Key   | Action                              |
+| ----- | ----------------------------------- |
+| C     | Copy email address to clipboard     |
+| E     | Edit label or note                  |
+| I     | Deactivate alias                    |
+| A     | Activate alias                      |
+| D     | Delete alias (asks for confirmation)|
+| Esc   | Back to list                        |
 
 ## How It Works
 

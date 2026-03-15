@@ -1,25 +1,33 @@
-# iCloud Hide My Email Manager v1.0.0
+# iCloud Hide My Email Manager v1.1.0
 
-The first public release of **iCloud Hide My Email Manager** — a standalone CLI tool to manage your iCloud+ Hide My Email aliases directly from the terminal.
+## What's New
 
-## Highlights
+### Interactive Email List (TUI)
 
-- **Full alias management** — Create, list, view, edit, deactivate, reactivate, and delete Hide My Email aliases
-- **Update forward-to** — Change which email address your aliases forward to, with a selection menu of all account emails
-- **Edit metadata** — Update alias labels and notes, or clear notes entirely
-- **Secure authentication** — Apple SRP protocol with 2FA push notifications; your password never leaves your machine in plaintext
-- **Encrypted sessions** — Session data is stored locally using AES-256-GCM encryption with a passphrase you choose
-- **Polished CLI** — Interactive menus, spinners, colored output, and formatted tables
+"List all emails" is now a full terminal UI experience:
 
-## Downloads
+- **Real-time search** — filter by email address or label as you type; the table updates instantly
+- **Arrow key navigation** — move between rows with ↑↓, the selected row is highlighted
+- **Enter to view detail** — opens the detail screen for the selected alias
+- **Esc to go back** — returns to the main menu
 
-| Platform | File                 |
-| -------- | -------------------- |
-| Windows  | `icloud-hme-win.exe` |
-| macOS    | `icloud-hme-macos`   |
-| Linux    | `icloud-hme-linux`   |
+### Email Detail Screen
 
-## Requirements
+All alias actions are now available directly from the detail view via keyboard shortcuts:
 
-- An active **iCloud+** subscription
-- A trusted Apple device for 2FA verification
+- **C** — copy email address to clipboard
+- **E** — edit label or note (includes a "Clear note" option)
+- **I / A** — deactivate or activate the alias (key changes based on current status)
+- **D** — permanently delete (confirmation required)
+- **Esc** — return to the list
+
+### New Features
+
+- **Statistics panel** — total, active, and inactive alias counts are shown at the top of the main menu on every visit
+- **Bulk operations** — deactivate or delete multiple aliases at once using checkbox selection
+- **Export** — save all aliases to a CSV or JSON file
+- **Clipboard shortcut** — press C after creating an alias to copy it instantly
+
+### Menu Cleanup
+
+Actions already available in the detail view (edit, deactivate, reactivate) have been removed as standalone menu entries, keeping the main menu minimal.

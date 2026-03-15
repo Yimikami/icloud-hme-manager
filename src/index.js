@@ -1,17 +1,19 @@
-import { select, input, confirm } from "@inquirer/prompts";
+import { select, input, confirm, checkbox } from "@inquirer/prompts";
 import chalk from "chalk";
-import { ensureSession, login, saveSession, getPassphrase } from "./auth.js";
+import { ensureSession, login, saveSession } from "./auth.js";
 import * as api from "./api.js";
 import {
-  formatEmailTable,
-  formatEmailDetail,
   banner,
   separator,
   success,
   warn,
   info,
   createSpinner,
+  promptCopyToClipboard,
+  showStats,
+  exportToFile,
 } from "./utils.js";
+import { runEmailManager } from "./tui.js";
 
 process.on("unhandledRejection", (err) => {
   console.error(chalk.red("\n  Unhandled error:"), err.message || err);
@@ -54,52 +56,12 @@ async function createEmail() {
     api.reserve(session, result.hme, label, note),
   );
 
+  const hme = reserved.hme.hme;
   console.log();
-  success(`Email reserved: ${chalk.white.bold(reserved.hme.hme)}`);
+  success(`Email reserved: ${chalk.white.bold(hme)}`);
   console.log(chalk.dim(`  ID: ${reserved.hme.anonymousId}`));
-}
-
-async function listEmails() {
-  separator();
-  const result = await withSpinner("Fetching emails...", () =>
-    api.list(session),
-  );
-  const emails = result.hmeEmails || [];
-
-  if (emails.length === 0) {
-    warn("No Hide My Email addresses found.");
-    return;
-  }
-
   console.log();
-  info(`${emails.length} email(s) found`);
-  console.log();
-  console.log(formatEmailTable(emails));
-  console.log(chalk.dim(`  Forward to: ${result.selectedForwardTo || "-"}`));
-}
-
-async function getEmailDetail() {
-  const result = await withSpinner("Fetching emails...", () =>
-    api.list(session),
-  );
-  const emails = result.hmeEmails || [];
-
-  if (emails.length === 0) {
-    warn("No emails found.");
-    return;
-  }
-
-  const choices = emails.map((e) => ({
-    name: `${e.hme}  ${chalk.dim(e.label || "no label")}  ${e.isActive ? chalk.green("active") : chalk.red("inactive")}`,
-    value: e.anonymousId,
-  }));
-
-  const anonymousId = await select({ message: "Select email:", choices });
-  const detail = await withSpinner("Loading details...", () =>
-    api.get(session, anonymousId),
-  );
-  console.log();
-  console.log(formatEmailDetail(detail.hme));
+  await promptCopyToClipboard(hme);
 }
 
 async function deactivateEmail() {
@@ -302,20 +264,158 @@ async function editEmail() {
   );
 }
 
+async function bulkDeactivate() {
+  separator();
+  const result = await withSpinner("Fetching emails...", () =>
+    api.list(session),
+  );
+  const emails = (result.hmeEmails || []).filter((e) => e.isActive);
+
+  if (emails.length === 0) {
+    warn("No active emails to deactivate.");
+    return;
+  }
+
+  const choices = emails.map((e) => ({
+    name: `${e.hme}  ${chalk.dim(e.label || "no label")}`,
+    value: e.anonymousId,
+  }));
+
+  const selected = await checkbox({
+    message: "Select emails to deactivate (Space to select, Enter to confirm):",
+    choices,
+  });
+
+  if (selected.length === 0) {
+    info("No emails selected.");
+    return;
+  }
+
+  const ok = await confirm({
+    message: chalk.yellow(`Deactivate ${selected.length} email(s)?`),
+    default: false,
+  });
+
+  if (!ok) {
+    info("Cancelled.");
+    return;
+  }
+
+  let done = 0;
+  for (const id of selected) {
+    await withSpinner(
+      `Deactivating ${done + 1}/${selected.length}...`,
+      () => api.deactivate(session, id),
+    );
+    done++;
+  }
+
+  success(`${done} email(s) deactivated.`);
+}
+
+async function bulkDelete() {
+  separator();
+  const result = await withSpinner("Fetching emails...", () =>
+    api.list(session),
+  );
+  const emails = result.hmeEmails || [];
+
+  if (emails.length === 0) {
+    warn("No emails to delete.");
+    return;
+  }
+
+  const choices = emails.map((e) => ({
+    name: `${e.hme}  ${chalk.dim(e.label || "no label")}  ${e.isActive ? chalk.green("active") : chalk.red("inactive")}`,
+    value: e.anonymousId,
+  }));
+
+  const selected = await checkbox({
+    message: "Select emails to delete (Space to select, Enter to confirm):",
+    choices,
+  });
+
+  if (selected.length === 0) {
+    info("No emails selected.");
+    return;
+  }
+
+  const ok = await confirm({
+    message: chalk.red.bold(`Permanently delete ${selected.length} email(s)?`),
+    default: false,
+  });
+
+  if (!ok) {
+    info("Cancelled.");
+    return;
+  }
+
+  let done = 0;
+  for (const id of selected) {
+    const email = emails.find((e) => e.anonymousId === id);
+    if (email && email.isActive) {
+      await withSpinner(
+        `Deactivating ${email.hme}...`,
+        () => api.deactivate(session, id),
+      );
+    }
+    await withSpinner(
+      `Deleting ${done + 1}/${selected.length}...`,
+      () => api.deleteEmail(session, id),
+    );
+    done++;
+  }
+
+  success(`${done} email(s) permanently deleted.`);
+}
+
+async function exportEmails() {
+  separator();
+  const result = await withSpinner("Fetching emails...", () =>
+    api.list(session),
+  );
+  const emails = result.hmeEmails || [];
+
+  if (emails.length === 0) {
+    warn("No emails to export.");
+    return;
+  }
+
+  const format = await select({
+    message: "Export format:",
+    choices: [
+      { name: "JSON", value: "json" },
+      { name: "CSV", value: "csv" },
+    ],
+  });
+
+  const filename = exportToFile(emails, format);
+  console.log();
+  success(`Exported ${emails.length} email(s) to ${chalk.white.bold(filename)}`);
+  info(`Saved in: ${chalk.dim(process.cwd())}`);
+}
+
 async function mainMenu() {
   while (true) {
     separator();
+
+    try {
+      const result = await api.list(session);
+      const emails = result.hmeEmails || [];
+      showStats(emails);
+    } catch {
+    }
+
     const action = await select({
       message: chalk.bold("What would you like to do?"),
       choices: [
         { name: chalk.cyan("+ Create new email"), value: "create" },
         { name: chalk.white("  List all emails"), value: "list" },
-        { name: chalk.white("  View email detail"), value: "detail" },
-        { name: chalk.yellow("  Deactivate email"), value: "deactivate" },
-        { name: chalk.green("  Reactivate email"), value: "reactivate" },
-        { name: chalk.white("  Edit email"), value: "edit" },
         { name: chalk.red("  Delete email"), value: "delete" },
+        { name: chalk.yellow("  Bulk deactivate"), value: "bulk_deactivate" },
+        { name: chalk.red("  Bulk delete"), value: "bulk_delete" },
         { name: chalk.magenta("  Update forward-to"), value: "forward" },
+        { name: chalk.blue("  Export emails"), value: "export" },
         { name: chalk.dim("  Re-login"), value: "relogin" },
         { name: chalk.dim("  Exit"), value: "exit" },
       ],
@@ -327,25 +427,22 @@ async function mainMenu() {
           await createEmail();
           break;
         case "list":
-          await listEmails();
-          break;
-        case "detail":
-          await getEmailDetail();
-          break;
-        case "deactivate":
-          await deactivateEmail();
-          break;
-        case "reactivate":
-          await reactivateEmail();
-          break;
-        case "edit":
-          await editEmail();
+          await runEmailManager(session);
           break;
         case "delete":
           await deleteEmailAction();
           break;
+        case "bulk_deactivate":
+          await bulkDeactivate();
+          break;
+        case "bulk_delete":
+          await bulkDelete();
+          break;
         case "forward":
           await updateForwardTo();
+          break;
+        case "export":
+          await exportEmails();
           break;
         case "relogin":
           session = await login();
