@@ -116,14 +116,6 @@ Apple ID + Password
 | Error message leakage | API/auth errors are sanitized; no PII in console output  |
 | OAuth client key      | Apple's own public web client key; safe to use           |
 
-### Tech Stack
-
-- **Runtime** &mdash; Node.js 18+
-- **Auth** &mdash; `@foxt/js-srp` (Apple SRP)
-- **CLI** &mdash; `@inquirer/prompts`, `ora`, `chalk`, `cli-table3`
-- **Crypto** &mdash; Node.js built-in `crypto` (AES-256-GCM, PBKDF2)
-- **Build** &mdash; `esbuild` + `@yao-pkg/pkg`
-
 ## License
 
 [MIT](LICENSE)
