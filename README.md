@@ -85,6 +85,7 @@ Session data is stored in your OS data directory:
 | **View detail**       | Inspect a specific alias                       |
 | **Deactivate**        | Pause forwarding for an alias                  |
 | **Reactivate**        | Resume forwarding for a paused alias           |
+| **Edit email**        | Update the label and note of an alias          |
 | **Delete**            | Permanently remove an alias (auto-deactivates) |
 | **Update forward-to** | Change the email address aliases forward to    |
 | **Re-login**          | Force a fresh authentication session           |

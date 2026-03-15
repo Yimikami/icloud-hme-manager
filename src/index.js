@@ -234,6 +234,74 @@ async function updateForwardTo() {
   success(`Forward-to updated to: ${chalk.white.bold(email)}`);
 }
 
+async function editEmail() {
+  const result = await withSpinner("Fetching emails...", () =>
+    api.list(session),
+  );
+  const emails = result.hmeEmails || [];
+
+  if (emails.length === 0) {
+    warn("No emails found.");
+    return;
+  }
+
+  const choices = emails.map((e) => ({
+    name: `${e.hme}  ${chalk.dim(e.label || "no label")}  ${e.isActive ? chalk.green("active") : chalk.red("inactive")}`,
+    value: e.anonymousId,
+  }));
+
+  const anonymousId = await select({
+    message: "Select email to edit:",
+    choices,
+  });
+  const selected = emails.find((e) => e.anonymousId === anonymousId);
+
+  info(`Current label: ${chalk.white.bold(selected.label || "-")}`);
+  info(`Current note:  ${chalk.white.bold(selected.note || "-")}`);
+  console.log();
+
+  const editChoices = [
+    { name: "Edit label", value: "label" },
+    { name: "Edit note", value: "note" },
+  ];
+  if (selected.note) {
+    editChoices.push({ name: chalk.red("Clear note"), value: "clear_note" });
+  }
+  editChoices.push({ name: chalk.dim("Back"), value: "back" });
+
+  const action = await select({
+    message: "What to edit?",
+    choices: editChoices,
+  });
+
+  if (action === "back") return;
+
+  let label = selected.label || "";
+  let note = selected.note || "";
+
+  if (action === "label") {
+    label = await input({
+      message: "New label:",
+      default: selected.label || "",
+      validate: (v) => v.trim().length > 0 || "Label cannot be empty",
+    });
+  } else if (action === "note") {
+    note = await input({
+      message: "New note:",
+      default: selected.note || "",
+    });
+  } else if (action === "clear_note") {
+    note = "";
+  }
+
+  await withSpinner("Updating metadata...", () =>
+    api.updateMetaData(session, anonymousId, label, note),
+  );
+  success(
+    action === "clear_note" ? "Note cleared." : "Email metadata updated.",
+  );
+}
+
 async function mainMenu() {
   while (true) {
     separator();
@@ -245,6 +313,7 @@ async function mainMenu() {
         { name: chalk.white("  View email detail"), value: "detail" },
         { name: chalk.yellow("  Deactivate email"), value: "deactivate" },
         { name: chalk.green("  Reactivate email"), value: "reactivate" },
+        { name: chalk.white("  Edit email"), value: "edit" },
         { name: chalk.red("  Delete email"), value: "delete" },
         { name: chalk.magenta("  Update forward-to"), value: "forward" },
         { name: chalk.dim("  Re-login"), value: "relogin" },
@@ -268,6 +337,9 @@ async function mainMenu() {
           break;
         case "reactivate":
           await reactivateEmail();
+          break;
+        case "edit":
+          await editEmail();
           break;
         case "delete":
           await deleteEmailAction();

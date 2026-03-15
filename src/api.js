@@ -65,3 +65,11 @@ export async function updateForwardTo(session, forwardToEmail) {
     forwardToEmail,
   });
 }
+
+export async function updateMetaData(session, anonymousId, label, note) {
+  return await request(session, "/v1/hme/updateMetaData", "POST", {
+    anonymousId,
+    label,
+    note,
+  });
+}
