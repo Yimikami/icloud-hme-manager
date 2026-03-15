@@ -2,11 +2,37 @@ import { Client, Hash, Mode, Srp, util } from "@foxt/js-srp";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
+import chalk from "chalk";
 import { input, password as passwordPrompt } from "@inquirer/prompts";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SESSION_FILE = path.join(__dirname, "..", "session.json");
+function getDataDir() {
+  const appName = "icloud-hme-manager";
+  const platform = process.platform;
+  let dir;
+  if (platform === "win32") {
+    dir = path.join(
+      process.env.APPDATA ||
+        path.join(process.env.USERPROFILE, "AppData", "Roaming"),
+      appName,
+    );
+  } else if (platform === "darwin") {
+    dir = path.join(
+      process.env.HOME,
+      "Library",
+      "Application Support",
+      appName,
+    );
+  } else {
+    dir = path.join(
+      process.env.XDG_CONFIG_HOME || path.join(process.env.HOME, ".config"),
+      appName,
+    );
+  }
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+const SESSION_FILE = path.join(getDataDir(), "session.json");
 const ENCRYPTION_ALGO = "aes-256-gcm";
 const KEY_ITERATIONS = 100000;
 const KEY_LENGTH = 32;
@@ -352,12 +378,38 @@ export async function getPassphrase() {
   return await passwordPrompt({ message: "Session passphrase:", mask: "*" });
 }
 
+export function sessionFileExists() {
+  return fs.existsSync(SESSION_FILE);
+}
+
 export async function ensureSession() {
   const passphrase = await getPassphrase();
+  const fileExists = sessionFileExists();
+
   let session = loadSession(passphrase);
   if (session && session.cookies && session.dsid) {
     return { session, passphrase };
   }
+
+  if (fileExists) {
+    console.log(chalk.yellow("\n  ! Wrong passphrase or corrupted session.\n"));
+    const { select } = await import("@inquirer/prompts");
+    const action = await select({
+      message: "What would you like to do?",
+      choices: [
+        { name: "Try another passphrase", value: "retry" },
+        { name: "Login with Apple ID (new session)", value: "login" },
+        { name: "Exit", value: "exit" },
+      ],
+    });
+
+    if (action === "retry") {
+      return await ensureSession();
+    } else if (action === "exit") {
+      process.exit(0);
+    }
+  }
+
   const newSession = await login();
   saveSession(newSession, passphrase);
   return { session: newSession, passphrase };

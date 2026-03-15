@@ -1,6 +1,5 @@
 import { select, input, confirm } from "@inquirer/prompts";
 import chalk from "chalk";
-import ora from "ora";
 import { ensureSession, login, saveSession, getPassphrase } from "./auth.js";
 import * as api from "./api.js";
 import {
@@ -11,29 +10,28 @@ import {
   success,
   warn,
   info,
+  createSpinner,
 } from "./utils.js";
 
 process.on("unhandledRejection", (err) => {
-  console.error(chalk.red("\nUnhandled error:"), err.message || err);
-  process.exit(1);
+  console.error(chalk.red("\n  Unhandled error:"), err.message || err);
 });
 
 process.on("uncaughtException", (err) => {
-  console.error(chalk.red("\nUncaught error:"), err.message || err);
-  process.exit(1);
+  console.error(chalk.red("\n  Uncaught error:"), err.message || err);
 });
 
 let session = null;
 let passphrase = null;
 
 async function withSpinner(text, fn) {
-  const spinner = ora({ text, color: "cyan" }).start();
+  const spinner = createSpinner(text).start();
   try {
     const result = await fn();
-    spinner.succeed();
+    spinner.succeed(text);
     return result;
   } catch (err) {
-    spinner.fail();
+    spinner.fail(text);
     throw err;
   }
 }
@@ -252,13 +250,25 @@ async function mainMenu() {
 async function main() {
   banner();
 
-  try {
-    const result = await ensureSession();
-    session = result.session;
-    passphrase = result.passphrase;
-  } catch (err) {
-    console.error(chalk.red(`\n  Login failed: ${err.message}\n`));
-    process.exit(1);
+  while (!session) {
+    try {
+      const result = await ensureSession();
+      session = result.session;
+      passphrase = result.passphrase;
+    } catch (err) {
+      console.error(chalk.red(`\n  Login failed: ${err.message}\n`));
+      const action = await select({
+        message: "What would you like to do?",
+        choices: [
+          { name: "Try again", value: "retry" },
+          { name: "Exit", value: "exit" },
+        ],
+      });
+      if (action === "exit") {
+        console.log(chalk.dim("\nGoodbye.\n"));
+        process.exit(0);
+      }
+    }
   }
 
   await mainMenu();

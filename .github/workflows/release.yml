@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: node18-linux-x64
+            artifact: icloud-hme-linux
+          - os: macos-latest
+            target: node18-macos-x64
+            artifact: icloud-hme-macos
+          - os: windows-latest
+            target: node18-win-x64
+            artifact: icloud-hme-win.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bundle with esbuild
+        run: npx esbuild src/index.js --bundle --platform=node --format=cjs --outfile=dist/bundle.cjs
+
+      - name: Compile with pkg
+        run: npx pkg dist/bundle.cjs --targets ${{ matrix.target }} --output dist/${{ matrix.artifact }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/icloud-hme-linux/icloud-hme-linux
+            artifacts/icloud-hme-macos/icloud-hme-macos
+            artifacts/icloud-hme-win.exe/icloud-hme-win.exe

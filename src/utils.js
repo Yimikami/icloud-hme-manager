@@ -1,6 +1,44 @@
 import chalk from "chalk";
 import Table from "cli-table3";
 
+const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
+export function createSpinner(text) {
+  let i = 0;
+  let interval = null;
+  return {
+    start() {
+      process.stdout.write(`  ${chalk.cyan(SPINNER_FRAMES[0])} ${text}`);
+      interval = setInterval(() => {
+        i = (i + 1) % SPINNER_FRAMES.length;
+        process.stdout.clearLine?.(0);
+        process.stdout.cursorTo?.(0);
+        process.stdout.write(`  ${chalk.cyan(SPINNER_FRAMES[i])} ${text}`);
+      }, 80);
+      return this;
+    },
+    succeed(msg) {
+      clearInterval(interval);
+      process.stdout.clearLine?.(0);
+      process.stdout.cursorTo?.(0);
+      console.log(`  ${chalk.green("✓")} ${msg || text}`);
+    },
+    fail(msg) {
+      clearInterval(interval);
+      process.stdout.clearLine?.(0);
+      process.stdout.cursorTo?.(0);
+      console.log(`  ${chalk.red("✗")} ${msg || text}`);
+    },
+  };
+}
+
+function formatDate(ts) {
+  if (!ts) return "-";
+  const d = new Date(ts);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const BORDER_STYLE = {
   top: "─",
   "top-mid": "┬",
@@ -26,7 +64,7 @@ export function banner() {
   console.log(
     chalk.cyan.bold("  │   ") +
       chalk.dim("Manage your private emails") +
-      chalk.cyan.bold("       │"),
+      chalk.cyan.bold("        │"),
   );
   console.log(chalk.cyan.bold("  └─────────────────────────────────────┘"));
   console.log();
@@ -67,9 +105,7 @@ export function formatEmailTable(emails) {
       ? chalk.green.bold("Active")
       : chalk.red("Inactive");
 
-    const created = email.createTimestamp
-      ? new Date(email.createTimestamp).toLocaleString("tr-TR")
-      : "-";
+    const created = formatDate(email.createTimestamp);
 
     table.push([
       chalk.dim(i + 1),
@@ -88,9 +124,7 @@ export function formatEmailDetail(email) {
     ? chalk.green.bold("Active")
     : chalk.red("Inactive");
 
-  const created = email.createTimestamp
-    ? new Date(email.createTimestamp).toLocaleString("tr-TR")
-    : "-";
+  const created = formatDate(email.createTimestamp);
 
   const table = new Table({
     chars: BORDER_STYLE,

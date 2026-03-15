@@ -6,6 +6,12 @@ A fast, secure CLI tool to manage your iCloud+ **Hide My Email** addresses.
 
 </div>
 
+<div align="center">
+
+![Demo](assets/demo.gif)
+
+</div>
+
 ---
 
 ## Features
@@ -13,8 +19,26 @@ A fast, secure CLI tool to manage your iCloud+ **Hide My Email** addresses.
 - **Full CRUD** &mdash; Create, list, view, deactivate, reactivate, and delete aliases
 - **Apple SRP authentication** &mdash; Secure login with 2FA support
 - **Encrypted sessions** &mdash; Session data is AES-256-GCM encrypted on disk
+- **Standalone executable** &mdash; No runtime required, just download and run
+- **Cross-platform** &mdash; Windows, macOS, and Linux
 
-## Quick Start
+## How to Use
+
+### Download (Recommended)
+
+Grab the latest executable for your platform from [**Releases**](https://github.com/Yimikami/icloud-hme-manager/releases):
+
+| Platform | File                 |
+| -------- | -------------------- |
+| Windows  | `icloud-hme-win.exe` |
+| macOS    | `icloud-hme-macos`   |
+| Linux    | `icloud-hme-linux`   |
+
+No Node.js or any other dependency required &mdash; just download and run.
+
+### Run from Source (Alternative)
+
+If you prefer to run from source:
 
 ```bash
 git clone https://github.com/Yimikami/icloud-hme-manager.git
@@ -23,17 +47,34 @@ npm install
 npm start
 ```
 
-> **Requirements:** Node.js 18+ and an active iCloud+ subscription.
+> **Requirements (source only):** Node.js 18+ and an active iCloud+ subscription.
 
-## Usage
+### First Launch
 
-On first launch you will be asked for:
+On first run the app will ask you for three things:
 
-1. **Session passphrase** &mdash; encrypts `session.json` locally (This will be your password for subsequent runs)
-2. **Apple ID & password** &mdash; used once for SRP authentication
-3. **2FA code** &mdash; pushed to your trusted Apple devices
+1. **Session passphrase** &mdash; a password you choose to encrypt your session locally
+2. **Apple ID & password** &mdash; used once for authentication
+3. **2FA code** &mdash; sent as a push notification to your trusted Apple devices
 
-After login the session is cached. Subsequent runs only need the passphrase.
+After the initial login your session is cached and encrypted. You only need to enter your **session passphrase** to get back in.
+
+### How Session Passphrase Works
+
+The session passphrase is a password **you choose** on first run. It encrypts your iCloud session data (cookies, tokens) on disk using AES-256-GCM. Think of it as a master password for the app.
+
+- **First run:** Pick any passphrase &rarr; login with Apple ID &rarr; session encrypted
+- **Next runs:** Enter the same passphrase &rarr; session decrypted &rarr; no login needed
+- **Wrong passphrase:** Session can't be decrypted &rarr; option to retry or login again
+- **Session expired:** Re-authentication with Apple ID required
+
+Session data is stored in your OS data directory:
+
+| OS      | Path                                                            |
+| ------- | --------------------------------------------------------------- |
+| Windows | `%APPDATA%\icloud-hme-manager\session.json`                     |
+| macOS   | `~/Library/Application Support/icloud-hme-manager/session.json` |
+| Linux   | `~/.config/icloud-hme-manager/session.json`                     |
 
 ### Commands
 
@@ -75,13 +116,14 @@ Apple ID + Password
 | Error message leakage | API/auth errors are sanitized; no PII in console output  |
 | OAuth client key      | Apple's own public web client key; safe to use           |
 
-## Tech Stack
+### Tech Stack
 
 - **Runtime** &mdash; Node.js 18+
 - **Auth** &mdash; `@foxt/js-srp` (Apple SRP)
 - **CLI** &mdash; `@inquirer/prompts`, `ora`, `chalk`, `cli-table3`
 - **Crypto** &mdash; Node.js built-in `crypto` (AES-256-GCM, PBKDF2)
+- **Build** &mdash; `esbuild` + `@yao-pkg/pkg`
 
 ## License
 
-MIT
+[MIT](LICENSE)
