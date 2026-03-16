@@ -156,8 +156,18 @@ export async function copyToClipboard(text) {
     return true;
   } catch {
     try {
-      if (process.platform === "linux") {
-        execSync(`echo -n "${text}" | xclip -selection clipboard 2>/dev/null || echo -n "${text}" | xsel --clipboard --input 2>/dev/null`);
+      if (process.platform === "win32") {
+        execSync(`echo|set /p="${text}" | clip`, { stdio: "ignore" });
+        return true;
+      } else if (process.platform === "darwin") {
+        execSync(`printf '%s' ${JSON.stringify(text)} | pbcopy`, {
+          stdio: "ignore",
+        });
+        return true;
+      } else if (process.platform === "linux") {
+        execSync(
+          `echo -n "${text}" | xclip -selection clipboard 2>/dev/null || echo -n "${text}" | xsel --clipboard --input 2>/dev/null`,
+        );
         return true;
       }
     } catch {}
@@ -166,11 +176,13 @@ export async function copyToClipboard(text) {
 }
 
 export async function promptCopyToClipboard(text) {
-  process.stdout.write(chalk.dim(`  Press C to copy address, any other key to continue...`));
+  process.stdout.write(
+    chalk.dim(`  Press C to copy address, any other key to continue...`),
+  );
 
   await new Promise((resolve) => {
     const onData = async (key) => {
-      cleanup();
+      process.stdin.removeListener("data", onData);
       process.stdout.clearLine?.(0);
       process.stdout.cursorTo?.(0);
 
@@ -185,18 +197,11 @@ export async function promptCopyToClipboard(text) {
       resolve();
     };
 
-    const cleanup = () => {
-      try { process.stdin.setRawMode(false); } catch {}
-      process.stdin.pause();
-      process.stdin.removeListener("data", onData);
-    };
-
     try {
-      process.stdin.setRawMode(true);
+      if (process.stdin.setRawMode) process.stdin.setRawMode(true);
       process.stdin.resume();
       process.stdin.once("data", onData);
     } catch {
-      cleanup();
       resolve();
     }
   });
@@ -206,9 +211,13 @@ export function sortEmails(emails, sortBy) {
   const copy = [...emails];
   switch (sortBy) {
     case "date_desc":
-      return copy.sort((a, b) => (b.createTimestamp || 0) - (a.createTimestamp || 0));
+      return copy.sort(
+        (a, b) => (b.createTimestamp || 0) - (a.createTimestamp || 0),
+      );
     case "date_asc":
-      return copy.sort((a, b) => (a.createTimestamp || 0) - (b.createTimestamp || 0));
+      return copy.sort(
+        (a, b) => (a.createTimestamp || 0) - (b.createTimestamp || 0),
+      );
     case "name_asc":
       return copy.sort((a, b) => a.hme.localeCompare(b.hme));
     case "label_asc":
@@ -269,13 +278,17 @@ export function exportToFile(emails, format) {
       note: e.note || "",
       status: e.isActive ? "active" : "inactive",
       forwardTo: e.forwardToEmail || "",
-      created: e.createTimestamp ? new Date(e.createTimestamp).toISOString() : "",
+      created: e.createTimestamp
+        ? new Date(e.createTimestamp).toISOString()
+        : "",
       id: e.anonymousId,
     }));
     writeFileSync(filepath, JSON.stringify(data, null, 2), "utf-8");
   } else {
     const rows = [
-      ["email", "label", "note", "status", "forwardTo", "created", "id"].join(","),
+      ["email", "label", "note", "status", "forwardTo", "created", "id"].join(
+        ",",
+      ),
       ...emails.map((e) =>
         [
           e.hme,

@@ -4,6 +4,8 @@
 
 A fast, secure CLI tool to manage your iCloud+ **Hide My Email** addresses.
 
+> **Want autofill in the browser?** Check out the [Browser Extension](https://github.com/Yimikami/icloud-hme-extension) to generate and autofill Hide My Email addresses into any website.
+
 </div>
 
 <div align="center">
@@ -82,36 +84,36 @@ Session data is stored in your OS data directory:
 
 ### Menu
 
-| Option                | Description                                              |
-| --------------------- | -------------------------------------------------------- |
-| **Create new email**  | Generate a random alias and reserve it                   |
-| **List all emails**   | Interactive TUI — search, navigate, and manage aliases   |
-| **Delete email**      | Permanently remove an alias                              |
-| **Bulk deactivate**   | Deactivate multiple aliases at once                      |
-| **Bulk delete**       | Delete multiple aliases at once                          |
-| **Update forward-to** | Change which address aliases forward to                  |
-| **Export emails**     | Save all aliases to a CSV or JSON file                   |
-| **Re-login**          | Force a fresh authentication session                     |
+| Option                | Description                                            |
+| --------------------- | ------------------------------------------------------ |
+| **Create new email**  | Generate a random alias and reserve it                 |
+| **List all emails**   | Interactive TUI — search, navigate, and manage aliases |
+| **Delete email**      | Permanently remove an alias                            |
+| **Bulk deactivate**   | Deactivate multiple aliases at once                    |
+| **Bulk delete**       | Delete multiple aliases at once                        |
+| **Update forward-to** | Change which address aliases forward to                |
+| **Export emails**     | Save all aliases to a CSV or JSON file                 |
+| **Re-login**          | Force a fresh authentication session                   |
 
 ### List View — Keyboard Shortcuts
 
-| Key       | Action                        |
-| --------- | ----------------------------- |
-| Type      | Filter aliases in real time   |
-| ↑ / ↓     | Navigate rows                 |
-| Enter     | Open detail view              |
-| Esc       | Back to main menu             |
+| Key   | Action                      |
+| ----- | --------------------------- |
+| Type  | Filter aliases in real time |
+| ↑ / ↓ | Navigate rows               |
+| Enter | Open detail view            |
+| Esc   | Back to main menu           |
 
 ### Detail View — Keyboard Shortcuts
 
-| Key   | Action                              |
-| ----- | ----------------------------------- |
-| C     | Copy email address to clipboard     |
-| E     | Edit label or note                  |
-| I     | Deactivate alias                    |
-| A     | Activate alias                      |
-| D     | Delete alias (asks for confirmation)|
-| Esc   | Back to list                        |
+| Key | Action                               |
+| --- | ------------------------------------ |
+| C   | Copy email address to clipboard      |
+| E   | Edit label or note                   |
+| I   | Deactivate alias                     |
+| A   | Activate alias                       |
+| D   | Delete alias (asks for confirmation) |
+| Esc | Back to list                         |
 
 ## How It Works
 
@@ -140,6 +142,10 @@ Apple ID + Password
 | Session persistence   | AES-256-GCM encrypted with a user-provided passphrase    |
 | Error message leakage | API/auth errors are sanitized; no PII in console output  |
 | OAuth client key      | Apple's own public web client key; safe to use           |
+
+## Related Projects
+
+- [**icloud-hme-extension**](https://github.com/Yimikami/icloud-hme-extension) &mdash; Browser extension to generate and autofill iCloud+ Hide My Email addresses into any website
 
 ## License
 

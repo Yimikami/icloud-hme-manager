@@ -5,12 +5,12 @@ import { copyToClipboard } from "./utils.js";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const COL_IDX    = 3;
-const COL_EMAIL  = 36;
-const COL_LABEL  = 22;
+const COL_IDX = 3;
+const COL_EMAIL = 36;
+const COL_LABEL = 22;
 const COL_STATUS = 10;
-const COL_DATE   = 12;
-const TOTAL_W    = COL_IDX + COL_EMAIL + COL_LABEL + COL_STATUS + COL_DATE + 10;
+const COL_DATE = 12;
+const TOTAL_W = COL_IDX + COL_EMAIL + COL_LABEL + COL_STATUS + COL_DATE + 10;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -33,50 +33,98 @@ function formatDateFull(ts) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-function dim(s) { return chalk.dim(s); }
-function hr() { return "  " + dim("─".repeat(TOTAL_W)); }
+function dim(s) {
+  return chalk.dim(s);
+}
+function hr() {
+  return "  " + dim("─".repeat(TOTAL_W));
+}
 
 // ── Raw mode ──────────────────────────────────────────────────────────────────
 
+let _rawHandler = null;
+let _rawReady = false;
+
+function _ensureRawListener() {
+  if (_rawReady) return;
+  _rawReady = true;
+  process.stdin.on("data", (buf) => {
+    if (_rawHandler) _rawHandler(buf);
+  });
+  process.stdin.resume();
+}
+
 function startRaw(handler) {
+  _ensureRawListener();
+  _rawHandler = handler;
+
   try {
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.on("data", handler);
+    if (process.stdin.setRawMode) process.stdin.setRawMode(true);
   } catch {}
+
+  process.stdin.resume();
 }
 
 function stopRaw(handler) {
-  try {
-    process.stdin.setRawMode(false);
-  } catch {}
-  process.stdin.pause();
-  process.stdin.removeListener("data", handler);
+  _rawHandler = null;
+  // NOTE: Do NOT call setRawMode(false) here.
+  // On Windows, toggling raw mode off kills stdin data events permanently.
+  // Inquirer manages its own raw mode when it needs non-raw input.
 }
 
 const SHOW_CURSOR = "\x1b[?25h";
 const HIDE_CURSOR = "\x1b[?25l";
-const CLEAR       = "\x1b[2J\x1b[H";
+const CLEAR = "\x1b[2J\x1b[H";
 
-function write(s) { process.stdout.write(s); }
-function clear()  { write(CLEAR); }
+function write(s) {
+  process.stdout.write(s);
+}
+function clear() {
+  write(CLEAR);
+}
 
 // ── List row renderer ─────────────────────────────────────────────────────────
 
 function renderRow(email, idx, selected) {
-  const n      = String(idx + 1).padEnd(COL_IDX);
-  const addr   = trunc(email.hme, COL_EMAIL).padEnd(COL_EMAIL);
-  const label  = trunc(email.label || "─", COL_LABEL).padEnd(COL_LABEL);
+  const n = String(idx + 1).padEnd(COL_IDX);
+  const addr = trunc(email.hme, COL_EMAIL).padEnd(COL_EMAIL);
+  const label = trunc(email.label || "─", COL_LABEL).padEnd(COL_LABEL);
   const status = (email.isActive ? "active" : "inactive").padEnd(COL_STATUS);
-  const date   = formatDate(email.createTimestamp).padEnd(COL_DATE);
+  const date = formatDate(email.createTimestamp).padEnd(COL_DATE);
 
   if (selected) {
     const bg = (s) => chalk.bgBlue.bold.white(s);
-    const st = email.isActive ? chalk.bgBlue.green(status) : chalk.bgBlue.red(status);
-    write("  " + bg(n) + "  " + bg(addr) + "  " + bg(label) + "  " + st + "  " + chalk.bgBlue.dim(date) + "\n");
+    const st = email.isActive
+      ? chalk.bgBlue.green(status)
+      : chalk.bgBlue.red(status);
+    write(
+      "  " +
+        bg(n) +
+        "  " +
+        bg(addr) +
+        "  " +
+        bg(label) +
+        "  " +
+        st +
+        "  " +
+        chalk.bgBlue.dim(date) +
+        "\n",
+    );
   } else {
     const st = email.isActive ? chalk.green(status) : chalk.red(status);
-    write("  " + dim(n) + "  " + chalk.white(addr) + "  " + dim(label) + "  " + st + "  " + dim(date) + "\n");
+    write(
+      "  " +
+        dim(n) +
+        "  " +
+        chalk.white(addr) +
+        "  " +
+        dim(label) +
+        "  " +
+        st +
+        "  " +
+        dim(date) +
+        "\n",
+    );
   }
 }
 
@@ -107,9 +155,15 @@ function renderList(emails, filtered, selectedIdx, searchTerm, forwardTo) {
   }
 
   write("\n");
-  write(dim(`  ${filtered.length}/${emails.length} email(s)  •  Forward to: ${forwardTo}`) + "\n");
+  write(
+    dim(
+      `  ${filtered.length}/${emails.length} email(s)  •  Forward to: ${forwardTo}`,
+    ) + "\n",
+  );
   write("\n");
-  write(dim("  ↑↓ Navigate  •  Enter: View detail  •  Esc: Back to menu") + "\n");
+  write(
+    dim("  ↑↓ Navigate  •  Enter: View detail  •  Esc: Back to menu") + "\n",
+  );
 }
 
 async function listView(emails, forwardTo) {
@@ -209,24 +263,24 @@ function renderDetail(email) {
     ? chalk.green.bold("Active")
     : chalk.red("Inactive");
 
-  field("Email",      chalk.white.bold(email.hme));
-  field("Label",      email.label || dim("─"));
-  field("Note",       email.note  || dim("─"));
-  field("Status",     status);
+  field("Email", chalk.white.bold(email.hme));
+  field("Label", email.label || dim("─"));
+  field("Note", email.note || dim("─"));
+  field("Status", status);
   field("Forward To", email.forwardToEmail || dim("─"));
-  field("Created",    dim(formatDateFull(email.createTimestamp)));
-  field("ID",         dim(email.anonymousId));
+  field("Created", dim(formatDateFull(email.createTimestamp)));
+  field("ID", dim(email.anonymousId));
 
   write("\n" + hr() + "\n\n");
 
   const shortcuts = [
-    chalk.cyan("[C]")  + " Copy",
+    chalk.cyan("[C]") + " Copy",
     chalk.white("[E]") + " Edit",
     email.isActive
       ? chalk.yellow("[I]") + " Deactivate"
-      : chalk.green("[A]")  + " Activate",
-    chalk.red("[D]")   + " Delete",
-    dim("[Esc]")       + " Back",
+      : chalk.green("[A]") + " Activate",
+    chalk.red("[D]") + " Delete",
+    dim("[Esc]") + " Back",
   ].join(dim("  •  "));
 
   write("  " + shortcuts + "\n");
@@ -297,7 +351,7 @@ async function doEdit(session, email) {
 
   const choices = [
     { name: "Label", value: "label" },
-    { name: "Note",  value: "note"  },
+    { name: "Note", value: "note" },
   ];
   if (email.note) {
     choices.push({ name: chalk.red("Clear note"), value: "clear_note" });
@@ -315,7 +369,7 @@ async function doEdit(session, email) {
 
   const newVal = await input({
     message: field === "label" ? "New label:" : "New note:",
-    default: field === "label" ? (email.label || "") : (email.note || ""),
+    default: field === "label" ? email.label || "" : email.note || "",
     validate:
       field === "label"
         ? (v) => v.trim().length > 0 || "Label cannot be empty"
@@ -325,8 +379,8 @@ async function doEdit(session, email) {
   await api.updateMetaData(
     session,
     email.anonymousId,
-    field === "label" ? newVal : (email.label || ""),
-    field === "note"  ? newVal : (email.note  || ""),
+    field === "label" ? newVal : email.label || "",
+    field === "note" ? newVal : email.note || "",
   );
 
   return { ...email, [field]: newVal };
@@ -424,7 +478,9 @@ export async function runEmailManager(session) {
             }
             write(dim("  Deleting...\n"));
             await api.deleteEmail(session, current.anonymousId);
-            emails = emails.filter((e) => e.anonymousId !== current.anonymousId);
+            emails = emails.filter(
+              (e) => e.anonymousId !== current.anonymousId,
+            );
             await briefMsg(chalk.green("  ✓ Deleted"));
             break;
           }
