@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import Table from "cli-table3";
-import { execSync } from "child_process";
+import { execSync, execFileSync } from "child_process";
 import { writeFileSync } from "fs";
 import { resolve } from "path";
 
@@ -157,17 +157,29 @@ export async function copyToClipboard(text) {
   } catch {
     try {
       if (process.platform === "win32") {
-        execSync(`echo|set /p="${text}" | clip`, { stdio: "ignore" });
+        execFileSync("clip", [], {
+          input: text,
+          stdio: ["pipe", "ignore", "ignore"],
+        });
         return true;
       } else if (process.platform === "darwin") {
-        execSync(`printf '%s' ${JSON.stringify(text)} | pbcopy`, {
-          stdio: "ignore",
+        execFileSync("pbcopy", [], {
+          input: text,
+          stdio: ["pipe", "ignore", "ignore"],
         });
         return true;
       } else if (process.platform === "linux") {
-        execSync(
-          `echo -n "${text}" | xclip -selection clipboard 2>/dev/null || echo -n "${text}" | xsel --clipboard --input 2>/dev/null`,
-        );
+        try {
+          execFileSync("xclip", ["-selection", "clipboard"], {
+            input: text,
+            stdio: ["pipe", "ignore", "ignore"],
+          });
+        } catch {
+          execFileSync("xsel", ["--clipboard", "--input"], {
+            input: text,
+            stdio: ["pipe", "ignore", "ignore"],
+          });
+        }
         return true;
       }
     } catch {}
