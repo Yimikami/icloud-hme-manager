@@ -248,7 +248,14 @@ export async function login() {
     );
     collectCookies(verifyRes);
 
-    if (verifyRes.status !== 204 && verifyRes.status !== 200) {
+    if (verifyRes.status === 409) {
+      const body = await verifyRes.text();
+      let data = {};
+      try { data = JSON.parse(body); } catch {}
+      if (data.securityCode?.valid !== true) {
+        throw new Error("2FA verification failed (HTTP 409)");
+      }
+    } else if (verifyRes.status !== 204 && verifyRes.status !== 200) {
       throw new Error(
         "2FA verification failed (HTTP " + verifyRes.status + ")",
       );
