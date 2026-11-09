@@ -297,23 +297,31 @@ export function exportToFile(emails, format) {
     }));
     writeFileSync(filepath, JSON.stringify(data, null, 2), "utf-8");
   } else {
+    const csvField = (value) =>
+      `"${(value == null ? "" : String(value)).replace(/"/g, '""')}"`;
     const rows = [
-      ["email", "label", "note", "status", "forwardTo", "created", "id"].join(
-        ",",
-      ),
+      ["email", "label", "note", "status", "forwardTo", "created", "id"]
+        .map(csvField)
+        .join(","),
       ...emails.map((e) =>
         [
           e.hme,
-          `"${(e.label || "").replace(/"/g, '""')}"`,
-          `"${(e.note || "").replace(/"/g, '""')}"`,
+          e.label || "",
+          e.note || "",
           e.isActive ? "active" : "inactive",
           e.forwardToEmail || "",
           e.createTimestamp ? new Date(e.createTimestamp).toISOString() : "",
           e.anonymousId,
-        ].join(","),
+        ]
+          .map(csvField)
+          .join(","),
       ),
     ];
-    writeFileSync(filepath, rows.join("\n"), "utf-8");
+    // Prepend a UTF-8 BOM and use CRLF so Excel (notably on Japanese Windows)
+    // detects UTF-8. Without the BOM, Excel decodes the file as Shift-JIS,
+    // which garbles non-ASCII labels and can swallow the closing quote,
+    // shifting columns so the email is not displayed.
+    writeFileSync(filepath, "﻿" + rows.join("\r\n") + "\r\n", "utf-8");
   }
 
   return filename;
